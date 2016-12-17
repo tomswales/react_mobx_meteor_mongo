@@ -8,9 +8,10 @@ import Dependents from '../imports/api/dependents/dependents'
 export default class ReactiveDataManager {
     // state - a Mobx store instance
     constructor(state) {
+        //  We want to enforce max of only one subscription and observer at a time for each data manager
         this.examplesSubscription = null;
-        this.dependentsSubscription = null;
         this.examplesObserver = null;
+        this.dependentsSubscription = null;
         this.dependentsObserver = null;
 
         // a Mobx autorun function for fetching data
@@ -21,10 +22,11 @@ export default class ReactiveDataManager {
                 state.updateExamples(refreshedExamples);
             };
 
+            // If a current subscription exists, it is now invalidated by the mobx autorun, so stop it
             if (this.examplesSubscription) {
                 this.examplesSubscription.stop();
             }
-
+            // same with the observer for the subscription
             if (this.examplesObserver) {
                 this.examplesObserver.stop();
             }
@@ -34,6 +36,7 @@ export default class ReactiveDataManager {
             this.examplesSubscription = Meteor.subscribe("examples", {
                 // callback when the Meteor subscription is ready
                 onReady: () => {
+                    // create a Meteor observer to watch the subscription for changes and update data when they occur
                     this.examplesObserver = Examples.find().observe({
                         added: () => {
                             refreshExamples(state);
@@ -56,29 +59,32 @@ export default class ReactiveDataManager {
                 state.updateDependents(refreshedDependents);
             };
 
+            // If a current subscription exists, it is now invalidated by the mobx autorun, so stop it
             if (this.dependentsSubscription) {
                 this.dependentsSubscription.stop();
             }
+            // same with the observer for the subscription
             if (this.dependentsObserver) {
                 this.dependentsObserver.stop();
             }
 
-            // create a new Meteor subscription
-            state.setDependentsLoading (true);
-            this.dependentsSubscription = Meteor.subscribe("dependents", dependentFilter, {
-                // callback when the Meteor subscription is ready
-                onReady: () => {
-                    this.dependentsObserver = Dependents.find().observe({
-                        added: () =>{
-                            refreshDependents(state);
-                        },
-                        changed: () => {
-                            refreshDependents(state);
-                        }
-                    });
-                    state.setDependentsLoading (false);
-                }
-            });
+            // create a new Meteor subscription, but only if there are some filter values
+            if (dependentFilter.length > 0) {
+                this.dependentsSubscription = Meteor.subscribe("dependents", dependentFilter, {
+                    // callback when the Meteor subscription is ready
+                    onReady: () => {
+                        // create a Meteor observer to watch the subscription for changes and update data when they occur
+                        this.dependentsObserver = Dependents.find().observe({
+                            added: () =>{
+                                refreshDependents(state);
+                            },
+                            changed: () => {
+                                refreshDependents(state);
+                            }
+                        });
+                    }
+                });
+            }
         });
     }
 }
