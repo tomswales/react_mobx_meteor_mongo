@@ -1,0 +1,16 @@
+{
+  "name": "React_Mobx_Meteor_Mongo",
+  "private": true,
+  "scripts": {
+    "start": "meteor run"
+  },
+  "dependencies": {
+    "meteor-node-stubs": "~0.2.0",
+    "mobx": "^2.7.0",
+    "mobx-react": "^4.0.3",
+    "react": "^15.0.2",
+    "react-dom": "^15.0.2",
+    "react-router": "^2.4.1"
+  },
+  "devDependencies": {}
+}
